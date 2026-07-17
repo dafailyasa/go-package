@@ -1,4 +1,4 @@
-.PHONY: help fmt vet test test-short test-race coverage coverage-html coverage-func benchmark clean
+.PHONY: help fmt vet test test-short test-race coverage coverage-html coverage-func benchmark clean coverage-check
 
 GO := go
 PKG := ./...
@@ -34,6 +34,11 @@ coverage: ## Generate coverage report
 coverage-html: coverage ## Generate HTML coverage report
 	$(GO) tool cover -html=$(COVERAGE_FILE) -o $(COVERAGE_HTML)
 	@echo "Coverage report: $(COVERAGE_HTML)"
+
+coverage-check: coverage ## Fail if coverage is below 80%
+	@COVERAGE=$$(go tool cover -func=$(COVERAGE_FILE) | grep total | awk '{print substr($$3,1,length($$3)-1)}'); \
+	echo "Coverage: $$COVERAGE%"; \
+	awk -v cov=$$COVERAGE 'BEGIN { if (cov < 80) exit 1; }'
 
 coverage-func: ## Show coverage summary only
 	$(GO) tool cover -func=$(COVERAGE_FILE)
