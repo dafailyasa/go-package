@@ -5,6 +5,8 @@ on:
     branches:
       - main
   pull_request:
+    branches:
+      - "**"
 
 permissions:
   contents: read
@@ -17,11 +19,7 @@ jobs:
     strategy:
       matrix:
         go-version:
-          - "1.24.5" # Use an exact version instead of "1.24"
-
-    env:
-      GOTOOLCHAIN: local
-      GOCOVERDIR: ""
+          - "1.26.1"
 
     steps:
       - name: Checkout source
@@ -34,7 +32,7 @@ jobs:
           check-latest: true
           cache: true
 
-      - name: Debug Go Environment
+      - name: Show Go Version
         run: |
           go version
           go env
@@ -48,12 +46,12 @@ jobs:
       - name: Run Go Vet
         run: make vet
 
-      - name: Run Unit Tests
+      - name: Run Unit Tests with Coverage
         run: make coverage-check
 
-      - name: Upload Coverage
+      - name: Upload Coverage Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: coverage
+          name: coverage-report
           path: coverage/
