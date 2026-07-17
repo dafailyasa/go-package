@@ -7,6 +7,7 @@ require (
 	github.com/labstack/echo/v4 v4.15.4
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.35.1
+	github.com/segmentio/kafka-go v0.4.47
 	github.com/stretchr/testify v1.11.1
 	github.com/valyala/fasthttp v1.72.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.69.0
@@ -33,6 +34,7 @@ require (
 	github.com/labstack/gommon v0.5.0 // indirect
 	github.com/mattn/go-colorable v0.1.15 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
+	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
