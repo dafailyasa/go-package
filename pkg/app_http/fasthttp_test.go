@@ -65,7 +65,7 @@ func TestDoHttpRequestWithJSONBody(t *testing.T) {
 		// Respond with the expected JSON response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]bool{"success": true})
+		json.NewEncoder(w).Encode(map[string]any{"success": true, "access_token": "123456"})
 	}))
 	defer server.Close()
 
@@ -77,7 +77,8 @@ func TestDoHttpRequestWithJSONBody(t *testing.T) {
 	}
 
 	var res struct {
-		Success bool `json:"success"`
+		Success     bool   `json:"success"`
+		AccessToken string `json:"access_token"`
 	}
 
 	// Call the DoHttpRequest method

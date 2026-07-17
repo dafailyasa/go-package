@@ -22,13 +22,13 @@ var defaultSensitiveKeys = []SensitiveKey{
 	{Pattern: regexp.MustCompile(`(?i)^password$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^pass$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^secret$`), MaskingType: Any},
-	{Pattern: regexp.MustCompile(`(?i)^token$`), MaskingType: Any},
-	{Pattern: regexp.MustCompile(`(?i)^access_token$`), MaskingType: Any},
+	{Pattern: regexp.MustCompile(`(?i)^token$`), MaskingType: Right},
+	{Pattern: regexp.MustCompile(`(?i)^access_token$`), MaskingType: Right},
 	{Pattern: regexp.MustCompile(`(?i)^refresh_token$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^id_token$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^api_key$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^apikey$`), MaskingType: Any},
-	{Pattern: regexp.MustCompile(`(?i)^authorization$`), MaskingType: Any},
+	{Pattern: regexp.MustCompile(`(?i)^authorization$`), MaskingType: Right},
 	// credential object leaf — "value" inside credentials[].value
 	{Pattern: regexp.MustCompile(`(?i)^value$`), MaskingType: Any},
 	// --- PII ---
@@ -44,11 +44,11 @@ var defaultSensitiveKeys = []SensitiveKey{
 
 // defaultSensitiveHeaders is the list of HTTP header names that should be masked.
 var defaultSensitiveHeaders = []SensitiveKey{
-	{Pattern: regexp.MustCompile(`(?i)^authorization$`), MaskingType: Any},
+	{Pattern: regexp.MustCompile(`(?i)^authorization$`), MaskingType: Right},
 	{Pattern: regexp.MustCompile(`(?i)^proxy-authorization$`), MaskingType: Any},
-	{Pattern: regexp.MustCompile(`(?i)^x-api-key$`), MaskingType: Any},
-	{Pattern: regexp.MustCompile(`(?i)^x-auth-token$`), MaskingType: Any},
-	{Pattern: regexp.MustCompile(`(?i)^x-access-token$`), MaskingType: Any},
+	{Pattern: regexp.MustCompile(`(?i)^x-api-key$`), MaskingType: Right},
+	{Pattern: regexp.MustCompile(`(?i)^x-auth-token$`), MaskingType: Right},
+	{Pattern: regexp.MustCompile(`(?i)^x-access-token$`), MaskingType: Right},
 	{Pattern: regexp.MustCompile(`(?i)^x-refresh-token$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^x-secret$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^cookie$`), MaskingType: Any},
@@ -106,6 +106,7 @@ func SanitizeBody(bodyBytes []byte, opts ...SanitizeOption) []byte {
 	if err != nil {
 		return bodyBytes
 	}
+
 	return out
 }
 

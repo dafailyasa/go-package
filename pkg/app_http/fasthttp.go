@@ -135,7 +135,6 @@ func (c *AppHttp) DoHttpRequest(ctx context.Context, req Request, res any) (*res
 				return nil, errors.Wrap(err, "failed to copy file to form")
 			}
 		}
-
 		//Add param to form
 		for key, param := range req.FormData {
 			_ = writer.WriteField(key, param)
@@ -168,11 +167,7 @@ func (c *AppHttp) DoHttpRequest(ctx context.Context, req Request, res any) (*res
 		Str("x-request-id", requestID).
 		Str("method", req.Method).
 		Str("endpoint", req.Endpoint).
-		Interface("headers", req.Headers).
-		Interface("requestBody", c.sanitizeRequestBody(req.Body)).
-		Interface("requestForm", c.sanitizeRequestBody(req.FormData)).
-		Interface("requestFormEncoded", c.sanitizeRequestBody(req.FormEncoded)).
-		Interface("requestFiles", req.Files).
+		Interface("RequestBody", utils.SanitizeBodyParsed(request.Body())).
 		Msg("[DoHttpRequest]request")
 
 	// Perform the request
@@ -202,8 +197,8 @@ func (c *AppHttp) DoHttpRequest(ctx context.Context, req Request, res any) (*res
 				Str("x-request-id", requestID).
 				Str("method", req.Method).
 				Str("endpoint", req.Endpoint).
-				Interface("requestBody", c.sanitizeRequestBody(string(response.Body()))).
-				Interface("responseBody", res).
+				Interface("requestBody", utils.SanitizeBodyParsed(request.Body())).
+				Interface("responseBody", utils.SanitizeBodyParsed(response.Body())).
 				Msg("[DoHttpRequest]json.Unmarshal")
 
 			return nil, errors.Wrap(err, "failed to decode response")
@@ -215,7 +210,7 @@ func (c *AppHttp) DoHttpRequest(ctx context.Context, req Request, res any) (*res
 		Str("method", req.Method).
 		Str("endpoint", req.Endpoint).
 		Int("statusCode", response.StatusCode()).
-		Interface("responseBody", res).
+		Interface("responseBody", utils.SanitizeBodyParsed(response.Body())).
 		Dur("duration", time.Since(start)).Msg("[DoHttpRequest]response")
 
 	headers := make(map[string]string)
@@ -230,14 +225,4 @@ func (c *AppHttp) DoHttpRequest(ctx context.Context, req Request, res any) (*res
 	}
 
 	return &resp, nil
-}
-func (c *AppHttp) sanitizeRequestBody(body any) any {
-	if body == nil {
-		return nil
-	}
-	raw, err := json.Marshal(body)
-	if err != nil {
-		return "[unserializable request body]"
-	}
-	return utils.SanitizeBody(raw)
 }
