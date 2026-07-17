@@ -24,13 +24,17 @@ var defaultSensitiveKeys = []SensitiveKey{
 	{Pattern: regexp.MustCompile(`(?i)^secret$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^token$`), MaskingType: Right},
 	{Pattern: regexp.MustCompile(`(?i)^access_token$`), MaskingType: Right},
+	{Pattern: regexp.MustCompile(`(?i)^accessToken$`), MaskingType: Right},
 	{Pattern: regexp.MustCompile(`(?i)^refresh_token$`), MaskingType: Any},
+	{Pattern: regexp.MustCompile(`(?i)^refreshToken$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^id_token$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^api_key$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^apikey$`), MaskingType: Any},
 	{Pattern: regexp.MustCompile(`(?i)^authorization$`), MaskingType: Right},
+
 	// credential object leaf — "value" inside credentials[].value
 	{Pattern: regexp.MustCompile(`(?i)^value$`), MaskingType: Any},
+
 	// --- PII ---
 	{Pattern: regexp.MustCompile(`(?i)^email$`), MaskingType: Middle},
 	{Pattern: regexp.MustCompile(`(?i)^phone$`), MaskingType: Right},
