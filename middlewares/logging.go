@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -61,12 +62,20 @@ func LoggingMiddleware(logger *zerolog.Logger) echo.MiddlewareFunc {
 			// Track the start time of the request
 			startTime := time.Now()
 			ignoreLogging := isPathIgnored(req.URL.Path)
-			var reqBody []byte
+			var requestBodyJSON interface{}
+			var sanitized any
 			if req.Body != nil {
 				// Read and restore the request body
 				reqBody, err := io.ReadAll(req.Body)
 				if err == nil {
 					req.Body = io.NopCloser(bytes.NewBuffer(reqBody))
+
+					// Parse the request body as JSON
+					if err := json.Unmarshal(reqBody, &requestBodyJSON); err != nil {
+						requestBodyJSON = nil
+					}
+
+					sanitized = utils.SanitizeBodyParsed(reqBody)
 				}
 			}
 
@@ -89,7 +98,7 @@ func LoggingMiddleware(logger *zerolog.Logger) echo.MiddlewareFunc {
 					Str("method", req.Method).
 					Str("path", req.URL.Path).
 					Str("ip", req.RemoteAddr).
-					Interface("body", utils.SanitizeBodyParsed(reqBody)).
+					Interface("body", sanitized).
 					Interface("query", queryParams).
 					Msg("[request]")
 
