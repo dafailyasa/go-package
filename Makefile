@@ -38,7 +38,7 @@ coverage-html: coverage ## Generate HTML coverage report
 coverage-check: coverage ## Fail if coverage is below 80%
 	@COVERAGE=$$(go tool cover -func=$(COVERAGE_FILE) | grep total | awk '{print substr($$3,1,length($$3)-1)}'); \
 	echo "Coverage: $$COVERAGE%"; \
-	awk -v cov=$$COVERAGE 'BEGIN { if (cov < 60) exit 1; }'
+	awk -v cov=$$COVERAGE 'BEGIN { if (cov < 80) exit 1; }'
 
 coverage-func: ## Show coverage summary only
 	$(GO) tool cover -func=$(COVERAGE_FILE)

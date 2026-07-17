@@ -11,69 +11,79 @@ import (
 	"github.com/dafailyasa/go-package/pkg/app_http"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestDoHttpRequestError(t *testing.T) {
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	appHttp := app_http.NewClient(&logger)
+type AppHTTPSuite struct {
+	suite.Suite
 
-	// Create a test server that returns an error response
+	logger zerolog.Logger
+	client *app_http.AppHttp
+}
+
+func TestAppHTTPSuite(t *testing.T) {
+	suite.Run(t, new(AppHTTPSuite))
+}
+
+func (s *AppHTTPSuite) SetupTest() {
+	s.logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
+	s.client = app_http.NewClient(&s.logger)
+}
+
+func (s *AppHTTPSuite) TestDoHttpRequestError() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Respond with a 404 Not Found error
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error": "not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	}))
 	defer server.Close()
 
 	req := app_http.Request{
-		Method:   "GET",
-		Endpoint: server.URL + "/nonexistent", // Use the test server URL
-		Headers:  map[string]string{"Content-Type": "application/json"},
+		Method:   http.MethodGet,
+		Endpoint: server.URL + "/nonexistent",
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
 	}
 
 	var res struct {
 		Error string `json:"error"`
 	}
 
-	// Call the DoHttpRequest method
-	resp, err := appHttp.DoHttpRequest(context.Background(), req, &res)
+	resp, err := s.client.DoHttpRequest(context.Background(), req, &res)
 
-	// Assertions
-	assert.NoError(t, err)
-	assert.Equal(t, resp.StatusCode, http.StatusNotFound)
-	assert.Contains(t, res.Error, "not found")
+	require.NoError(s.T(), err)
+	assert.Equal(s.T(), http.StatusNotFound, resp.StatusCode)
+	assert.Equal(s.T(), "not found", res.Error)
 }
 
-func TestDoHttpRequestWithJSONBody(t *testing.T) {
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	appHttp := app_http.NewClient(&logger)
-
-	// Create a test server that returns a mocked response
+func (s *AppHTTPSuite) TestDoHttpRequestWithJSONBody() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check for the Content-Type header
-		if r.Header.Get("Content-Type") != "application/json" {
-			http.Error(w, "Invalid content type", http.StatusBadRequest)
-			return
-		}
+		assert.Equal(s.T(), "application/json", r.Header.Get("Content-Type"))
 
-		var reqBody map[string]string
-		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
-			http.Error(w, "Invalid JSON", http.StatusBadRequest)
-			return
-		}
+		var body map[string]string
+		err := json.NewDecoder(r.Body).Decode(&body)
+		require.NoError(s.T(), err)
 
-		// Respond with the expected JSON response
+		assert.Equal(s.T(), "value", body["key"])
+
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]any{"success": true, "access_token": "123456"})
+		json.NewEncoder(w).Encode(map[string]any{
+			"success":      true,
+			"access_token": "123456",
+		})
 	}))
 	defer server.Close()
 
 	req := app_http.Request{
-		Method:   "POST",
-		Endpoint: server.URL + "/test",
-		Headers:  map[string]string{"Content-Type": "application/json"},
-		Body:     map[string]string{"key": "value"},
+		Method:   http.MethodPost,
+		Endpoint: server.URL,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+		Body: map[string]string{
+			"key": "value",
+		},
 	}
 
 	var res struct {
@@ -81,65 +91,47 @@ func TestDoHttpRequestWithJSONBody(t *testing.T) {
 		AccessToken string `json:"access_token"`
 	}
 
-	// Call the DoHttpRequest method
-	_, err := appHttp.DoHttpRequest(context.Background(), req, &res)
+	_, err := s.client.DoHttpRequest(context.Background(), req, &res)
 
-	// Assertions
-	assert.NoError(t, err)
-	assert.True(t, res.Success)
+	require.NoError(s.T(), err)
+	assert.True(s.T(), res.Success)
+	assert.Equal(s.T(), "123456", res.AccessToken)
 }
 
-func TestDoHttpRequestWithFormFile(t *testing.T) {
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	appHttp := app_http.NewClient(&logger)
-
-	// Create a test server that handles form file uploads
+func (s *AppHTTPSuite) TestDoHttpRequestWithFormFile() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Parse the multipart form
-		err := r.ParseMultipartForm(10 << 20) // Limit your max memory
-		if err != nil {
-			http.Error(w, "Unable to parse form", http.StatusBadRequest)
-			return
-		}
+		err := r.ParseMultipartForm(10 << 20)
+		require.NoError(s.T(), err)
 
-		// Check if the file exists
 		file, _, err := r.FormFile("file")
-		if err != nil {
-			http.Error(w, "File not found", http.StatusBadRequest)
-			return
-		}
+		require.NoError(s.T(), err)
 		defer file.Close()
 
-		// Respond with a success message
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]bool{"success": true})
+		json.NewEncoder(w).Encode(map[string]bool{
+			"success": true,
+		})
 	}))
 	defer server.Close()
 
-	// Create a temporary file for testing
-	tempFile, err := os.CreateTemp("", "testfile.txt")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	defer os.Remove(tempFile.Name()) // Clean up
+	tmp, err := os.CreateTemp("", "*.txt")
+	require.NoError(s.T(), err)
 
-	// Write some test data to the file
-	if _, err := tempFile.WriteString("This is a test file."); err != nil {
-		t.Fatalf("Failed to write to temp file: %v", err)
-	}
+	defer os.Remove(tmp.Name())
+	defer tmp.Close()
 
-	// Close the file so it can be read later
-	defer tempFile.Close()
+	_, err = tmp.WriteString("hello world")
+	require.NoError(s.T(), err)
 
-	// Prepare the request with the file
 	req := app_http.Request{
 		Method:   http.MethodPost,
-		Endpoint: server.URL + "/upload",
-		Headers:  map[string]string{"Content-Type": "multipart/form-data"},
+		Endpoint: server.URL,
+		Headers: map[string]string{
+			"Content-Type": "multipart/form-data",
+		},
 		Files: map[string]app_http.File{
 			"file": {
-				FileName: "fileku.text",
-				File:     tempFile,
+				FileName: "test.txt",
+				File:     tmp,
 			},
 		},
 	}
@@ -148,31 +140,25 @@ func TestDoHttpRequestWithFormFile(t *testing.T) {
 		Success bool `json:"success"`
 	}
 
-	// Call the DoHttpRequest method
-	_, err = appHttp.DoHttpRequest(context.Background(), req, &res)
+	_, err = s.client.DoHttpRequest(context.Background(), req, &res)
 
-	// Assertions
-	assert.NoError(t, err)
-	assert.True(t, res.Success)
+	require.NoError(s.T(), err)
+	assert.True(s.T(), res.Success)
 }
 
-func TestDoHttpRequestWithURLEncodedBody(t *testing.T) {
-	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
-	appHttp := app_http.NewClient(&logger)
-
+func (s *AppHTTPSuite) TestDoHttpRequestWithURLEncodedBody() {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		assert.Equal(t,
+		assert.Equal(
+			s.T(),
 			"application/x-www-form-urlencoded",
 			r.Header.Get("Content-Type"),
 		)
 
-		err := r.ParseForm()
-		assert.NoError(t, err)
+		require.NoError(s.T(), r.ParseForm())
 
-		assert.Equal(t, "john", r.FormValue("username"))
-		assert.Equal(t, "secret", r.FormValue("password"))
+		assert.Equal(s.T(), "john", r.FormValue("username"))
+		assert.Equal(s.T(), "secret", r.FormValue("password"))
 
-		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]bool{
 			"success": true,
 		})
@@ -181,7 +167,7 @@ func TestDoHttpRequestWithURLEncodedBody(t *testing.T) {
 
 	req := app_http.Request{
 		Method:   http.MethodPost,
-		Endpoint: server.URL + "/login",
+		Endpoint: server.URL,
 		Headers: map[string]string{
 			"Content-Type": "application/x-www-form-urlencoded",
 		},
@@ -195,8 +181,8 @@ func TestDoHttpRequestWithURLEncodedBody(t *testing.T) {
 		Success bool `json:"success"`
 	}
 
-	_, err := appHttp.DoHttpRequest(context.Background(), req, &res)
+	_, err := s.client.DoHttpRequest(context.Background(), req, &res)
 
-	assert.NoError(t, err)
-	assert.True(t, res.Success)
+	require.NoError(s.T(), err)
+	assert.True(s.T(), res.Success)
 }

@@ -8,11 +8,24 @@ import (
 	"github.com/dafailyasa/go-package/pkg/apperror"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestErrorBuilder(t *testing.T) {
+type ResponseSuite struct {
+	suite.Suite
+
+	echo *echo.Echo
+}
+
+func TestResponseSuite(t *testing.T) {
+	suite.Run(t, new(ResponseSuite))
+}
+
+func (s *ResponseSuite) SetupTest() {
+	s.echo = echo.New()
+}
+
+func (s *ResponseSuite) TestErrorBuilder() {
 	tests := []struct {
 		name            string
 		input           error
@@ -46,17 +59,17 @@ func TestErrorBuilder(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			resp := ErrorBuilder(tt.input)
 
-			assert.Equal(t, tt.expectedCode, resp.Code)
-			assert.Equal(t, tt.expectedMessage, resp.Message)
-			assert.Equal(t, tt.expectedError, resp.Error)
+			s.Equal(tt.expectedCode, resp.Code)
+			s.Equal(tt.expectedMessage, resp.Message)
+			s.Equal(tt.expectedError, resp.Error)
 		})
 	}
 }
 
-func TestSuccessResponse_Send(t *testing.T) {
+func (s *ResponseSuite) TestSuccessResponseSend() {
 	tests := []struct {
 		name string
 		resp SuccessResponse
@@ -71,26 +84,35 @@ func TestSuccessResponse_Send(t *testing.T) {
 			name: "Positive - Nil Data",
 			resp: SuccessBuilder(nil),
 		},
+		{
+			name: "Positive - With Pagination",
+			resp: SuccessBuilder(
+				[]string{"a", "b"},
+				map[string]any{
+					"page":  1,
+					"limit": 10,
+					"total": 2,
+				},
+			),
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := echo.New()
-
+		s.Run(tt.name, func() {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
-			ctx := e.NewContext(req, rec)
+			ctx := s.echo.NewContext(req, rec)
 
 			err := tt.resp.Send(ctx)
 
-			require.NoError(t, err)
-			assert.Equal(t, http.StatusOK, rec.Code)
-			assert.NotEmpty(t, rec.Body.String())
+			s.NoError(err)
+			s.Equal(http.StatusOK, rec.Code)
+			s.NotEmpty(rec.Body.String())
 		})
 	}
 }
 
-func TestFailedResponse_Send(t *testing.T) {
+func (s *ResponseSuite) TestFailedResponseSend() {
 	tests := []struct {
 		name string
 		resp FailedResponse
@@ -122,18 +144,16 @@ func TestFailedResponse_Send(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			e := echo.New()
-
+		s.Run(tt.name, func() {
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			rec := httptest.NewRecorder()
-			ctx := e.NewContext(req, rec)
+			ctx := s.echo.NewContext(req, rec)
 
 			err := tt.resp.Send(ctx)
 
-			require.NoError(t, err)
-			assert.Equal(t, tt.resp.Code, rec.Code)
-			assert.NotEmpty(t, rec.Body.String())
+			s.NoError(err)
+			s.Equal(tt.resp.Code, rec.Code)
+			s.NotEmpty(rec.Body.String())
 		})
 	}
 }

@@ -4,11 +4,20 @@ import (
 	"context"
 	"testing"
 
+	"github.com/dafailyasa/go-package/pkg/constant"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestInjectRequestID(t *testing.T) {
+type RequestIDSuite struct {
+	suite.Suite
+}
+
+func TestRequestIDSuite(t *testing.T) {
+	suite.Run(t, new(RequestIDSuite))
+}
+
+func (s *RequestIDSuite) TestInjectRequestID() {
 	tests := []struct {
 		name       string
 		ctx        context.Context
@@ -43,22 +52,23 @@ func TestInjectRequestID(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			ctx := InjectRequestID(tt.ctx, tt.requestID, "", "")
 
-			id := ctx.Value(XRequestID).(string)
+			id, ok := ctx.Value(constant.XRequestID).(string)
+			s.True(ok)
 
 			if tt.expectUUID {
 				_, err := uuid.Parse(id)
-				assert.NoError(t, err)
+				s.NoError(err)
 			} else {
-				assert.Equal(t, tt.expectedID, id)
+				s.Equal(tt.expectedID, id)
 			}
 		})
 	}
 }
 
-func TestExtractRequestID(t *testing.T) {
+func (s *RequestIDSuite) TestExtractRequestID() {
 	tests := []struct {
 		name       string
 		ctx        context.Context
@@ -67,7 +77,7 @@ func TestExtractRequestID(t *testing.T) {
 	}{
 		{
 			name:       "Positive - Request ID Exists",
-			ctx:        context.WithValue(context.Background(), XRequestID, "request-123"),
+			ctx:        context.WithValue(context.Background(), constant.XRequestID, "request-123"),
 			expectedID: "request-123",
 		},
 		{
@@ -82,26 +92,26 @@ func TestExtractRequestID(t *testing.T) {
 		},
 		{
 			name:       "Negative - Invalid Type",
-			ctx:        context.WithValue(context.Background(), XRequestID, 123),
+			ctx:        context.WithValue(context.Background(), constant.XRequestID, 123),
 			expectUUID: true,
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			id := ExtractRequestID(tt.ctx)
 
 			if tt.expectUUID {
 				_, err := uuid.Parse(id)
-				assert.NoError(t, err)
+				s.NoError(err)
 			} else {
-				assert.Equal(t, tt.expectedID, id)
+				s.Equal(tt.expectedID, id)
 			}
 		})
 	}
 }
 
-func TestInjectToCtx(t *testing.T) {
+func (s *RequestIDSuite) TestInjectToCtx() {
 	tests := []struct {
 		name     string
 		value    string
@@ -120,10 +130,10 @@ func TestInjectToCtx(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := injectToCtx(context.Background(), XRequestID, tt.value)
+		s.Run(tt.name, func() {
+			ctx := injectToCtx(context.Background(), constant.XRequestID, tt.value)
 
-			assert.Equal(t, tt.expected, ctx.Value(XRequestID))
+			s.Equal(tt.expected, ctx.Value(constant.XRequestID))
 		})
 	}
 }

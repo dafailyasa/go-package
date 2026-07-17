@@ -3,11 +3,8 @@ package utils
 import (
 	"context"
 
+	"github.com/dafailyasa/go-package/pkg/constant"
 	"github.com/google/uuid"
-)
-
-const (
-	XRequestID = "x-request-id"
 )
 
 func InjectRequestID(ctx context.Context, reqID, chainID, journeyID string) context.Context {
@@ -17,7 +14,7 @@ func InjectRequestID(ctx context.Context, reqID, chainID, journeyID string) cont
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	ctx = injectToCtx(ctx, XRequestID, reqID)
+	ctx = injectToCtx(ctx, constant.XRequestID, reqID)
 	return ctx
 }
 
@@ -32,7 +29,7 @@ func ExtractRequestID(ctx context.Context) string {
 	if ctx == nil {
 		return uuid.New().String()
 	}
-	if requestID, ok := ctx.Value(XRequestID).(string); ok {
+	if requestID, ok := ctx.Value(constant.XRequestID).(string); ok {
 		return requestID
 	}
 	return uuid.New().String()

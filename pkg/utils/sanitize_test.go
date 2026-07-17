@@ -5,14 +5,22 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestSanitizeBody(t *testing.T) {
+type SanitizerSuite struct {
+	suite.Suite
+}
+
+func TestSanitizerSuite(t *testing.T) {
+	suite.Run(t, new(SanitizerSuite))
+}
+
+func (s *SanitizerSuite) TestSanitizeBody() {
 	tests := []struct {
 		name     string
 		input    string
-		validate func(t *testing.T, output map[string]any)
+		validate func(map[string]any)
 	}{
 		{
 			name: "Positive - Mask Default Sensitive Keys",
@@ -22,85 +30,81 @@ func TestSanitizeBody(t *testing.T) {
 				"email":"john@example.com",
 				"name":"John"
 			}`,
-			validate: func(t *testing.T, output map[string]any) {
-				assert.Equal(t, DefaultMasked, output["password"])
-				assert.NotEqual(t, "abcdefghijklmnop", output["token"])
-				assert.NotEqual(t, "john@example.com", output["email"])
-				assert.Equal(t, "John", output["name"])
+			validate: func(output map[string]any) {
+				s.Equal(DefaultMasked, output["password"])
+				s.NotEqual("abcdefghijklmnop", output["token"])
+				s.NotEqual("john@example.com", output["email"])
+				s.Equal("John", output["name"])
 			},
 		},
 		{
 			name:  "Negative - Invalid JSON",
 			input: `{invalid}`,
-			validate: func(t *testing.T, output map[string]any) {
-				t.Fatal("should not be called")
-			},
 		},
 		{
-			name:     "Negative - Empty Body",
-			input:    "",
-			validate: func(t *testing.T, output map[string]any) {},
+			name:  "Negative - Empty Body",
+			input: "",
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			out := SanitizeBody([]byte(tt.input))
 
-			if tt.name == "Negative - Invalid JSON" {
-				assert.Equal(t, []byte(tt.input), out)
-				return
-			}
+			switch tt.name {
+			case "Negative - Invalid JSON":
+				s.Equal([]byte(tt.input), out)
 
-			if tt.name == "Negative - Empty Body" {
-				assert.Empty(t, out)
-				return
-			}
+			case "Negative - Empty Body":
+				s.Empty(out)
 
-			var parsed map[string]any
-			assert.NoError(t, json.Unmarshal(out, &parsed))
-			tt.validate(t, parsed)
+			default:
+				var parsed map[string]any
+				s.NoError(json.Unmarshal(out, &parsed))
+				tt.validate(parsed)
+			}
 		})
 	}
 }
 
-func TestSanitizeBodyParsed(t *testing.T) {
-	t.Run("Positive", func(t *testing.T) {
+func (s *SanitizerSuite) TestSanitizeBodyParsed() {
+	s.Run("Positive", func() {
 		out := SanitizeBodyParsed([]byte(`{"password":"123456"}`))
 
-		result := out.(map[string]any)
-		assert.Equal(t, DefaultMasked, result["password"])
+		result, ok := out.(map[string]any)
+		s.True(ok)
+		s.Equal(DefaultMasked, result["password"])
 	})
 
-	t.Run("Negative - Invalid JSON", func(t *testing.T) {
+	s.Run("Negative - Invalid JSON", func() {
 		out := SanitizeBodyParsed([]byte(`invalid`))
-		assert.Equal(t, "invalid", out)
+		s.Equal("invalid", out)
 	})
 
-	t.Run("Negative - Empty Body", func(t *testing.T) {
-		assert.Nil(t, SanitizeBodyParsed(nil))
+	s.Run("Negative - Empty Body", func() {
+		s.Nil(SanitizeBodyParsed(nil))
 	})
 }
 
-func TestSanitizeBodyIndent(t *testing.T) {
-	t.Run("Positive", func(t *testing.T) {
+func (s *SanitizerSuite) TestSanitizeBodyIndent() {
+	s.Run("Positive", func() {
 		out := SanitizeBodyIndent([]byte(`{"password":"123456"}`))
 
-		assert.Contains(t, string(out), "\n")
-		assert.Contains(t, string(out), DefaultMasked)
+		s.Contains(string(out), "\n")
+		s.Contains(string(out), DefaultMasked)
 	})
 
-	t.Run("Negative - Invalid JSON", func(t *testing.T) {
+	s.Run("Negative - Invalid JSON", func() {
 		out := SanitizeBodyIndent([]byte(`invalid`))
-		assert.Equal(t, "invalid", string(out))
+		s.Equal("invalid", string(out))
 	})
 }
 
-func TestSanitizeHeaders(t *testing.T) {
+func (s *SanitizerSuite) TestSanitizeHeaders() {
 	tests := []struct {
 		name    string
 		headers map[string]string
-		check   func(t *testing.T, result map[string]string)
+		check   func(map[string]string)
 	}{
 		{
 			name: "Positive",
@@ -108,29 +112,29 @@ func TestSanitizeHeaders(t *testing.T) {
 				"Authorization": "Bearer abcdefghijklmnop",
 				"Content-Type":  "application/json",
 			},
-			check: func(t *testing.T, result map[string]string) {
-				assert.NotEqual(t, "Bearer abcdefghijklmnop", result["Authorization"])
-				assert.Equal(t, "application/json", result["Content-Type"])
+			check: func(result map[string]string) {
+				s.NotEqual("Bearer abcdefghijklmnop", result["Authorization"])
+				s.Equal("application/json", result["Content-Type"])
 			},
 		},
 		{
 			name:    "Negative - Empty",
 			headers: map[string]string{},
-			check: func(t *testing.T, result map[string]string) {
-				assert.Empty(t, result)
+			check: func(result map[string]string) {
+				s.Empty(result)
 			},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+		s.Run(tt.name, func() {
 			result := SanitizeHeaders(tt.headers)
-			tt.check(t, result)
+			tt.check(result)
 		})
 	}
 }
 
-func TestWithExtraKeys(t *testing.T) {
+func (s *SanitizerSuite) TestWithExtraKeys() {
 	headers := map[string]string{
 		"MySecret": "abcdef",
 	}
@@ -144,10 +148,10 @@ func TestWithExtraKeys(t *testing.T) {
 
 	result := SanitizeHeaders(headers, WithExtraKeys(keys))
 
-	assert.Equal(t, DefaultMasked, result["MySecret"])
+	s.Equal(DefaultMasked, result["MySecret"])
 }
 
-func TestWithCustomKeysOnly(t *testing.T) {
+func (s *SanitizerSuite) TestWithCustomKeysOnly() {
 	headers := map[string]string{
 		"Authorization": "Bearer token",
 		"MySecret":      "abcdef",
@@ -162,14 +166,11 @@ func TestWithCustomKeysOnly(t *testing.T) {
 
 	result := SanitizeHeaders(headers, WithCustomKeysOnly(keys))
 
-	// default key should no longer be masked
-	assert.Equal(t, "Bearer token", result["Authorization"])
-
-	// custom key should be masked
-	assert.Equal(t, DefaultMasked, result["MySecret"])
+	s.Equal("Bearer token", result["Authorization"])
+	s.Equal(DefaultMasked, result["MySecret"])
 }
 
-func TestMatchSensitiveKey(t *testing.T) {
+func (s *SanitizerSuite) TestMatchSensitiveKey() {
 	keys := []SensitiveKey{
 		{
 			Pattern:     regexp.MustCompile(`(?i)^password$`),
@@ -177,16 +178,16 @@ func TestMatchSensitiveKey(t *testing.T) {
 		},
 	}
 
-	t.Run("Positive", func(t *testing.T) {
+	s.Run("Positive", func() {
 		mask, ok := matchSensitiveKey(" password ", keys)
 
-		assert.True(t, ok)
-		assert.Equal(t, Any, mask)
+		s.True(ok)
+		s.Equal(Any, mask)
 	})
 
-	t.Run("Negative", func(t *testing.T) {
+	s.Run("Negative", func() {
 		_, ok := matchSensitiveKey("username", keys)
 
-		assert.False(t, ok)
+		s.False(ok)
 	})
 }

@@ -3,12 +3,9 @@ package middleware
 import (
 	"context"
 
+	"github.com/dafailyasa/go-package/pkg/constant"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-)
-
-const (
-	XRequestID = "x-request-id"
 )
 
 func RequestIDMiddleware() echo.MiddlewareFunc {
@@ -17,18 +14,18 @@ func RequestIDMiddleware() echo.MiddlewareFunc {
 			req := c.Request()
 			res := c.Response()
 
-			requestID := req.Header.Get(XRequestID)
+			requestID := req.Header.Get(constant.XRequestID)
 			if requestID == "" {
 				requestID = uuid.NewString()
 			}
 
-			req.Header.Set(XRequestID, requestID)
+			req.Header.Set(constant.XRequestID, requestID)
 
-			res.Header().Set(XRequestID, requestID)
+			res.Header().Set(constant.XRequestID, requestID)
 
-			c.Set(XRequestID, requestID)
+			c.Set(constant.XRequestID, requestID)
 
-			ctx := context.WithValue(req.Context(), XRequestID, requestID)
+			ctx := context.WithValue(req.Context(), constant.XRequestID, requestID)
 			c.SetRequest(req.WithContext(ctx))
 
 			return next(c)
