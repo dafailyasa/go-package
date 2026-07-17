@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	XRequestID = "X-Request-ID"
+	XRequestID = "x-request-id"
 )
 
 func RequestIDMiddleware() echo.MiddlewareFunc {
