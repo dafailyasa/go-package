@@ -12,40 +12,40 @@ import (
 // EventType constants for the e-commerce saga
 const (
 	// Order events
-	EventOrderCreated          = "order.created"
-	EventOrderConfirmed        = "order.confirmed"
-	EventOrderFailed           = "order.failed"
-	EventOrderCancelled        = "order.cancelled"
+	EventOrderCreated   = "order.created"
+	EventOrderConfirmed = "order.confirmed"
+	EventOrderFailed    = "order.failed"
+	EventOrderCancelled = "order.cancelled"
 
 	// Inventory events
-	EventStockReserved         = "inventory.stock_reserved"
+	EventStockReserved          = "inventory.stock_reserved"
 	EventStockReservationFailed = "inventory.stock_reservation_failed"
-	EventStockReleased         = "inventory.stock_released"
+	EventStockReleased          = "inventory.stock_released"
 
 	// Payment events
-	EventPaymentProcessed      = "payment.processed"
-	EventPaymentFailed         = "payment.failed"
-	EventPaymentRefunded       = "payment.refunded"
+	EventPaymentProcessed = "payment.processed"
+	EventPaymentFailed    = "payment.failed"
+	EventPaymentRefunded  = "payment.refunded"
 
 	// Shipping events
-	EventShipmentCreated       = "shipping.created"
-	EventShipmentFailed        = "shipping.failed"
-	EventShipmentDelivered     = "shipping.delivered"
+	EventShipmentCreated   = "shipping.created"
+	EventShipmentFailed    = "shipping.failed"
+	EventShipmentDelivered = "shipping.delivered"
 
 	// Notification events
-	EventNotificationSent      = "notification.sent"
-	EventNotificationFailed    = "notification.failed"
+	EventNotificationSent   = "notification.sent"
+	EventNotificationFailed = "notification.failed"
 )
 
 // Topic constants
 const (
-	TopicOrder          = "order.events"
-	TopicInventory      = "inventory.events"
-	TopicPayment        = "payment.events"
-	TopicShipping       = "shipping.events"
-	TopicNotification   = "notification.events"
-	TopicSaga           = "saga.events"
-	TopicDeadLetter     = "saga.dead-letter"
+	TopicOrder        = "order.events"
+	TopicInventory    = "inventory.events"
+	TopicPayment      = "payment.events"
+	TopicShipping     = "shipping.events"
+	TopicNotification = "notification.events"
+	TopicSaga         = "saga.events"
+	TopicDeadLetter   = "saga.dead-letter"
 )
 
 // Message represents the envelope for all Kafka events
@@ -116,14 +116,14 @@ type ProducerConfig struct {
 
 // ConsumerConfig holds configuration for the Kafka consumer
 type ConsumerConfig struct {
-	Brokers       []string
-	GroupID       string
-	Topics        []string
-	MinBytes      int
-	MaxBytes      int
-	MaxWait       time.Duration
-	StartOffset   int64 // -1 for earliest, -2 for latest
-	Logger        zerolog.Logger
+	Brokers     []string
+	GroupID     string
+	Topics      []string
+	MinBytes    int
+	MaxBytes    int
+	MaxWait     time.Duration
+	StartOffset int64 // -1 for earliest, -2 for latest
+	Logger      zerolog.Logger
 }
 
 // DeadLetterConfig holds configuration for the DLQ

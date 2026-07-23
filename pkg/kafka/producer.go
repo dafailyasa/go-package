@@ -13,9 +13,9 @@ import (
 
 // Producer handles publishing messages to Kafka topics
 type Producer struct {
-	writer      *kafka.Writer
-	logger      zerolog.Logger
-	propagator  propagation.TextMapPropagator
+	writer     *kafka.Writer
+	logger     zerolog.Logger
+	propagator propagation.TextMapPropagator
 }
 
 // NewProducer creates a new Kafka producer
@@ -77,6 +77,7 @@ func (p *Producer) Publish(ctx context.Context, topic string, msg Message) error
 	p.propagator.Inject(ctx, carrier)
 
 	kafkaMsg := kafka.Message{
+		Topic:   topic,
 		Key:     []byte(msg.AggregateID),
 		Value:   data,
 		Headers: carrier.Headers(),
@@ -93,6 +94,9 @@ func (p *Producer) Publish(ctx context.Context, topic string, msg Message) error
 	p.logger.Info().Str("topic", topic).Str("event_type", msg.EventType).
 		Str("saga_id", msg.SagaID).Str("event_id", msg.EventID).
 		Msg("message published successfully")
+
+	RecordMessageProduced(topic, msg.EventType)
+
 	return nil
 }
 
@@ -109,6 +113,7 @@ func (p *Producer) PublishAsync(ctx context.Context, topic string, msg Message) 
 	p.propagator.Inject(ctx, carrier)
 
 	kafkaMsg := kafka.Message{
+		Topic:   topic,
 		Key:     []byte(msg.AggregateID),
 		Value:   data,
 		Headers: carrier.Headers(),

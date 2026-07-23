@@ -120,6 +120,8 @@ func (c *Consumer) consumeMessage(ctx context.Context, handler MessageHandler) e
 		Int("retry_count", msg.RetryCount).
 		Msg("received message")
 
+	RecordMessageConsumed(c.config.Topics[0], msg.EventType)
+
 	// Process the message
 	if err := handler(ctx, msg); err != nil {
 		instrumentation.RecordSpanError(span, err)

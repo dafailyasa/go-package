@@ -25,6 +25,15 @@ func NewResilientConsumer(cfg ConsumerConfig, dlq *DeadLetterQueue) *ResilientCo
 	}
 }
 
+// NewResilientConsumerFromConsumer wraps an existing Consumer with retry and DLQ
+func NewResilientConsumerFromConsumer(consumer *Consumer, dlq *DeadLetterQueue, logger zerolog.Logger) *ResilientConsumer {
+	return &ResilientConsumer{
+		consumer: consumer,
+		dlq:      dlq,
+		logger:   logger,
+	}
+}
+
 // Start begins consuming with retry and DLQ handling
 func (rc *ResilientConsumer) Start(ctx context.Context, handler MessageHandler) {
 	wrappedHandler := rc.wrapHandlerWithRetry(handler)
@@ -65,6 +74,8 @@ func (rc *ResilientConsumer) wrapHandlerWithRetry(handler MessageHandler) Messag
 			Int("retry_count", retryMsg.RetryCount).
 			Dur("backoff", backoff).
 			Msg("retrying message processing")
+
+		RecordRetry(msg.EventType, msg.EventType)
 
 		time.Sleep(backoff)
 

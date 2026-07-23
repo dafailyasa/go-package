@@ -56,6 +56,8 @@ func (dlq *DeadLetterQueue) SendToDLQ(ctx context.Context, originalMsg Message, 
 		Str("reason", reason).
 		Msg("sending message to dead letter queue")
 
+	RecordDLQMessage(dlq.config.Topic, originalMsg.EventType, reason)
+
 	return dlq.producer.Publish(ctx, dlq.config.Topic, dlqMsg)
 }
 
