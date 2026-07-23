@@ -83,3 +83,11 @@ func GatewayTimeout(err error) error {
 		Err:     err,
 	}
 }
+
+func UnprocessableEntity(err error) error {
+	return &AppError{
+		Code:    http.StatusUnprocessableEntity,
+		Message: "unprocessable_entity",
+		Err:     err,
+	}
+}
