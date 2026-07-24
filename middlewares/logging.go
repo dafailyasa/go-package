@@ -33,7 +33,7 @@ var ignoredPatterns = []*regexp.Regexp{}
 
 func init() {
 	// Define the dynamic parts of the paths
-	dynamicPaths := []string{"swagger", "ping", "metrics"}
+	dynamicPaths := []string{"swagger", "ping", "metrics", "health"}
 
 	for _, path := range dynamicPaths {
 		// Create a pattern that allows for any prefix before the dynamic path
